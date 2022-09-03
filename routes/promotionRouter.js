@@ -1,51 +1,234 @@
 const express = require('express');
+const { handle } = require('express/lib/router');
 
 const promotionRouter = express.Router();
 
+const Promotion = require('../models/promotion');
 
 // Routing method acts as a catch-all for any HTTP verb
 // As with all routing methods, takes 2 parameters(path, function-to-do-when-called)
 promotionRouter.route('/')
-.all((req, res, next) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/plain');
-    next();  // passes control to the next routing method after this one. Otherwise it would stop here, and not go further
+.get((req, res, next) => { //"next" not included because there are no more instructinos after this)
+    Promotion.find()
+    .then(promotions => {
+        res.statusCode = 200;
+        res.setHeader('Content-type', 'application/json');
+        res.json(promotions)
+    })
+    .catch(err => next(err));
 })
-.get((req, res) => { //"next" not included because there are no more instructinos after this)
-    res.end('Will send all promotions to you');
+.post((req, res, next) => {
+
+    Promotion.create(req.body)
+    .then(promotion => {
+        console.log(`Promotion created: ${promotion}`);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(promotion)
+    })
+    .catch(err => next(err))
 })
-.post((req, res) => {
-    const promotionName = req.body.name; // This is how we get information out of the request. req.body.whatever-will-be-submitted
-    const promotionDescription = req.body.description;
-    res.end(`Will update the promotions with the following:\nPromotion name: ${promotionName}\nPromotion description: ${promotionDescription}`)
-})
-.put((req, res) => {
+.put((req, res, next) => {
     res.statusCode = 403;
     res.end('PUT operation not supported on /promotions')
 })
-.delete((req, res) => {
-    res.end('Deleting all promotions');
+.delete((req, res, next) => {
+    Promotion.deleteMany()
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err))
 });
 
 // Routes for specific promotion (referenced by promotionId)
 promotionRouter.route('/:promotionId')
-.all((req, res, next) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/plain');
-    next();
+.get((req, res, next) => {
+    Promotion.findById(req.params.promotionId)
+    .then(promotion => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(promotion);
+    })
+    .catch(err => next(err))
 })
-.get((req, res) => {
-    res.end(`Will send information for promotion with ID: ${req.params.promotionId} to you`);
-})
-.post((req, res) => {
+.post((req, res, next) => {
+    res.statusCode = 403;
     res.end('POST operation not supported on for specific promotion IDs')
-
 })
-.put((req, res) => {
-    res.end(`Will update the promotion with ID: ${req.params.promotionId} with the following information:\nPromotion name: ${req.body.name}\nPromotion description: ${req.body.description}`)
+.put((req, res, next) => {
+    Promotion.findByIdAndUpdate(req.params.promotionId, {
+        $set: req.body
+    },
+    {
+        new: true
+    })
+    .then(promotion => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application.json');
+        res.json(promotion);
+    })
+    .catch(err => next(err))
 })
-.delete((req, res) => {
-    res.end(`Deleting promotion with ID: ${req.params.promotionId}`);
+.delete((req, res, next) => {
+    Promotion.findByIdAndDelete(req.params.promotionId)
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application.json');
+        res.json(response);
+    })
+    .catch(err => next(err))
 });
+
+// Endpoints for promotions/:promotionId/comments
+promotionRouter.route('/:promotionId/comments')
+.get((req, res, next) => { //"next" not included because there are no more instructinos after this)
+    Promotion.findById(req.params.promotionId)
+    .then(promotion => {
+        if (promotion) {
+        res.statusCode = 200;
+        res.setHeader('Content-type', 'application/json');
+        res.json(promotion.comments)
+        } else {
+            err = new Error(`Promotion ${req.params.promotionId} not found`);
+            err.status = 404;
+            return next(err)
+        }
+    })
+    .catch(err => next(err));
+})
+
+.post((req, res, next) => {
+    Promotion.findById(req.params.promotionId)
+    .then(promotion => {
+        if (promotion) {
+            promotion.comments.push(req.body);
+            promotion.save()
+            .then((promotion) => {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.json(promotion.comments);
+        })
+        .catch(err => next(err));
+        } else {
+            err = new Error(`Promotion ${req.params.promotionId} not found`);
+            err.status = 404;
+            return next(err)
+        }
+    })
+    .catch(err => next(err))
+})
+
+.put((req, res, next) => {
+    res.statusCode = 403;
+    res.end(`PUT operation not supported on /promotions/${req.params.promotionId}/comments`);
+})
+
+.delete((req, res, next) => {
+    Promotion.findById(req.params.promotionId)
+    .then((promotion) => {
+        if (promotion) {
+            for (let i = promotion.comments.length-1; i >=0; i-- ) {
+                promotion.comments.id(promotion.comments[i]._id).remove();
+            };
+            promotion.save()
+            .then(promotion => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(promotion)
+            })
+            .catch(err => next(err))
+        } else {
+            err = new Error(`Promotion ${req.params.promotionId} not found`);
+            err.status=404
+            return next(err)
+        }
+    })
+    .catch(err => next(err))
+});
+
+// Endpoints for promotions/:promotionId/comments/:commentId
+promotionRouter.route('/:promotionId/comments/:commentId')
+.get((req, res, next) => { //"next" not included because there are no more instructinos after this)
+    Promotion.findById(req.params.promotionId)
+    .then(promotion => {
+        if (promotion && promotion.comments.id(req.params.commentId)) {
+        res.statusCode = 200;
+        res.setHeader('Content-type', 'application/json');
+        res.json(promotion.comments.id(req.params.commentId))
+        } else if (!promotion) {
+            err = new Error(`Promotion ${req.params.promotionId} not found`);
+            err.status = 404;
+            return next(err)
+        } else {
+            err = new Error(`Comment ${req.params.commentId} not found`);
+            err.status = 404;
+            return next(err)
+        }
+    })
+    .catch(err => next(err));
+})
+
+.post((req, res, next) => {
+    res.statusCode = 403;
+    res.end(`POST operation not supported on /promotions/${req.params.promotionId}/comments/${req.params.commentId}`)
+})
+
+.put((req, res, next) => {
+    Promotion.findById(req.params.promotionId)
+    .then(promotion => {
+        if (promotion && promotion.comments.id(req.params.commentId)) {
+            if (req.body.rating) {
+                promotion.comments.id(req.params.commentId).rating = req.body.rating
+            };
+            if (req.body.text) {
+                promotion.comments.id(req.params.commentId).text = req.body.text
+            };
+            promotion.save()
+            .then(promotion => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(promotion)
+            })
+            .catch(err => next(err))
+        } else if (!promotion) {
+            err = new Error(`Promotion ${req.params.promotionId} not found`);
+            err.status = 404;
+            return next(err)
+        } else {
+            err = new Error(`Comment ${req.params.commentId} not found`);
+            err.status = 404;
+            return next(err)
+        }
+    })
+})
+
+.delete((req, res, next) => {
+    Promotion.findById(req.params.promotionId)
+    .then((promotion) => {
+        if (promotion && promotion.comments.id(req.params.commentId)) {
+            promotion.comments.id(req.params.commentId).remove();
+            promotion.save()
+            .then(promotion => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(promotion)
+            })
+            .catch(err => next(err))
+        } else if (!promotion) {
+            err = new Error(`Promotion ${req.params.promotionId} not found`);
+            err.status = 404;
+            return next(err)
+        } else {
+            err = new Error(`Comment ${req.params.commentId} not found`);
+            err.status = 404;
+            return next(err)
+        }
+    })
+    .catch(err => next(err))
+});
+
+
 
 module.exports = promotionRouter;
