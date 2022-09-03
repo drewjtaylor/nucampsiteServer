@@ -22,7 +22,7 @@ campsiteRouter.route('/')
     Campsite.create(req.body)
     .then(campsite => {
         console.log(`Campsite created: ${campsite}`);
-        res.statusCode = 200;
+        res.statusCode = 201;
         res.setHeader('Content-Type', 'application/json');
         res.json(campsite)
     })
@@ -106,7 +106,7 @@ campsiteRouter.route('/:campsiteId/comments')
             campsite.comments.push(req.body);
             campsite.save()
             .then((campsite) => {
-            res.statusCode = 200;
+            res.statusCode = 201;
             res.setHeader('Content-Type', 'application/json');
             res.json(campsite.comments);
         })
