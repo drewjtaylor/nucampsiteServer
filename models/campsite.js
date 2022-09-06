@@ -60,6 +60,5 @@ const campsiteSchema = new Schema(
     {timestamps: true}
 )
 
-const Campsite = model('Campsite', campsiteSchema);
 
-module.exports = Campsite;
+module.exports = model('Campsite', campsiteSchema);
