@@ -3,6 +3,8 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -33,11 +35,23 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser('e5th4b643645*#jf491'));
+// app.use(cookieParser('e5th4b643645*#jf491'));
+
+// Set up session middleware (has build-in cookies, so the cookieparser was unneeded)
+app.use(session({
+    name: 'session-id',
+    secret: 'e5th4b643645*#jf491',
+    saveUninitialized: false,
+    resave: false,
+    store: new FileStore()
+}))
 
 // Authentication happens here
 const auth = (req, res, next) => {
-    if (!req.signedCookies.user) {
+    console.log(req.session);
+
+
+    if (!req.session.user) {
         const authHeader = req.headers.authorization;
         if (!authHeader) {
             const err = new Error('You are not authenticated');
@@ -50,7 +64,7 @@ const auth = (req, res, next) => {
         const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
         const [user, password] = auth;
         if (user === 'admin' && password === 'password') {
-            res.cookie('user', 'admin', {signed: true, maxAge: 60000})
+            req.session.user = 'admin';
     
     
             return next();
@@ -61,7 +75,7 @@ const auth = (req, res, next) => {
             return next(err)
         }
     } else {
-        if (req.signedCookies.user === 'admin') {
+        if (req.session.user === 'admin') {
             return next();
         } else {
             const err = new Error('You are not authenticared');
