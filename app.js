@@ -33,7 +33,47 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser('e5th4b643645*#jf491'));
+
+// Authentication happens here
+const auth = (req, res, next) => {
+    if (!req.signedCookies.user) {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+            const err = new Error('You are not authenticated');
+            res.setHeader('WWW-Authenticate', 'Basic');
+            err.status = 401;
+            return next(err)
+        }
+    
+        // If there is an authHeader, deconstruct/decode the user and password and check it
+        const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
+        const [user, password] = auth;
+        if (user === 'admin' && password === 'password') {
+            res.cookie('user', 'admin', {signed: true, maxAge: 60000})
+    
+    
+            return next();
+        } else {
+            const err = new Error('You are not authenticared');
+            res.setHeader('WWW-Authenticate', 'Basic');
+            err.status = 401;
+            return next(err)
+        }
+    } else {
+        if (req.signedCookies.user === 'admin') {
+            return next();
+        } else {
+            const err = new Error('You are not authenticared');
+            err.status = 401;
+            return next(err)
+        }
+    }
+
+
+}
+app.use(auth);
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
