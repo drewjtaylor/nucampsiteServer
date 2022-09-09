@@ -1,8 +1,8 @@
 const express = require('express');
-const { handle } = require('express/lib/router');
+const Partner = require('../models/partner');
+const authenticate = require('../authenticate');
 
 const partnerRouter = express.Router();
-const Partner = require('../models/partner');
 
 // Routing method acts as a catch-all for any HTTP verb
 // As with all routing methods, takes 2 parameters(path, function-to-do-when-called)
@@ -16,7 +16,7 @@ partnerRouter.route('/')
     })
     .catch(err => next(err));
 })
-.post((req, res, next) => {
+.post(authenticate.verifyUser, (req, res, next) => {
     Partner.create(req.body)
     .then(partner => {
         console.log(`Partner created: ${partner}`);
@@ -26,11 +26,11 @@ partnerRouter.route('/')
     })
     .catch(err => next(err))
 })
-.put((req, res) => {
+.put(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403;
     res.end('PUT operation not supported on /partners')
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser, (req, res, next) => {
     Partner.deleteMany() // Delete many passes information about what was deleted
     .then(partnersDeleted => {
         res.statusCode = 200;
@@ -51,11 +51,11 @@ partnerRouter.route('/:partnerId')
     })
     .catch(err => next(err))
 })
-.post((req, res) => {
+.post(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403;
     res.end('POST operation not supported for specific partner IDs')
 })
-.put((req, res, next) => {
+.put(authenticate.verifyUser, (req, res, next) => {
     Partner.findByIdAndUpdate(req.params.partnerId, {
         $set: req.body
     },
@@ -69,7 +69,7 @@ partnerRouter.route('/:partnerId')
     })
     .catch(err => next(err))
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser, (req, res, next) => {
     Partner.findByIdAndDelete(req.params.partnerId)
     .then(partnerDeleted => {
         res.statusCode = 200;
