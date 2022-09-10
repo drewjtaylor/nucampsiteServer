@@ -16,6 +16,18 @@ exports.getToken = user => {
     return jwt.sign(user, config.secretKey, {expiresIn: 3600});
 };
 
+
+// Task 1, workshop 3
+exports.verifyAdmin = (req, res, next) => {
+    if (req.user.admin) {
+        return next()
+    } else {
+        err = new Error('You are not authorized to perform this operation!');
+        err.statusCode = 403;
+        return next(err);
+    };
+}
+
 const opts = {};
 
 opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
