@@ -17,7 +17,7 @@ router.get('/', authenticate.verifyUser, authenticate.verifyAdmin, function(req,
 });
 
 
-router.post('/signup', (req, res) => {
+router.post('/signup', (req, res, next) => {
     User.register(
         new User({username: req.body.username}),
         req.body.password,
@@ -38,7 +38,7 @@ router.post('/signup', (req, res) => {
                         res.statusCode = 500;
                         res.setHeader('Content-Type', 'Application/json');
                         res.json({err: err});
-                        return
+                        return next(err)
                     };
                     passport.authenticate('local')(req, res, () => {
                         res.statusCode = 200;
