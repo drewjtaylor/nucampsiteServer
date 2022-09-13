@@ -17,7 +17,6 @@ exports.getToken = user => {
 };
 
 
-// Task 1, workshop 3
 exports.verifyAdmin = (req, res, next) => {
     if (req.user.admin) {
         return next()
