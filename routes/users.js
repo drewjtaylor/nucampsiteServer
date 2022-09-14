@@ -62,6 +62,7 @@ router.post('/login', cors.corsWithOptions, passport.authenticate('local'), (req
 
 router.get('/logout', cors.corsWithOptions, (req, res, next) => {
     if (req.session) {
+        console.log('You were successfully logged out')
         req.session.destroy();
         res.clearCookie('session-id');
         res.redirect('/');

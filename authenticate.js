@@ -21,7 +21,7 @@ exports.verifyAdmin = (req, res, next) => {
     if (req.user.admin) {
         return next()
     } else {
-        err = new Error('You are not authorized to perform this operation!');
+        const err = new Error('You are not authorized to perform this operation!');
         err.statusCode = 403;
         return next(err);
     };
@@ -36,7 +36,7 @@ exports.jwtPassport = passport.use(
     new JwtStrategy(
         opts,
         (jwt_payload, done) => {
-            console.log(`JWT payload; ${jwt_payload}`);
+            console.log(`The JWT payload is:\n${jwt_payload}`);
             User.findOne({_id: jwt_payload._id}, (err, user) => {
                 if (err) {
                     return done(err, false);

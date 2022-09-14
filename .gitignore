@@ -2,3 +2,5 @@ node_modules
 dummydata.json
 
 bin/server.*
+
+config.js
