@@ -60,18 +60,30 @@ router.post('/login', cors.corsWithOptions, passport.authenticate('local'), (req
     res.json({success: true, token: token, status: 'You are successfully logged in!'})
 })
 
-router.get('/logout', cors.corsWithOptions, (req, res, next) => {
+router.get('/logout', (req, res, next) => {
+    req.logout(); 
+    console.log(req);
+    req.session.destroy();
+    res.clearCookie('session-id');
+    res.redirect('/');
+})
+
+
+// Original logout route
+// This was still in Nucamp's version as of https://learn.nucamp.co/mod/book/view.php?id=3604&chapterid=4079 (week 2: passport and token-based authentication)
+router.get('/logout', (req, res, next) => {
     if (req.session) {
-        console.log('You were successfully logged out')
         req.session.destroy();
         res.clearCookie('session-id');
-        res.redirect('/');
+        res.redirect('/')
     } else {
-        const err = new Error('You are not logged in!');
-        err.status = 401;
-        return next(err);
+        const err = new Error('You are not logged in (req.session not found)');
+        err.status=401;
+        return next(err)
     }
 })
+
+
 
 router.get('/facebook/token', passport.authenticate('facebook-token'), (req, res) => {
     if (req.user) {
